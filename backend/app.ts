@@ -5,26 +5,12 @@ import { runResearchPipeline } from "./llmWork/pipeline.js";
 
 const app = express();
 
-// Configure allowed CORS origins
-const configuredFrontend = process.env.FRONTEND_URI?.replace(/\/$/, "");
-
+// Enable CORS for all origins
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, health checks)
-      if (!origin) return callback(null, true);
-
-      const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-      const isVercel = origin.endsWith(".vercel.app");
-      const isConfigured = configuredFrontend && origin.replace(/\/$/, "") === configuredFrontend;
-
-      if (isLocalhost || isVercel || isConfigured || !process.env.FRONTEND_URI) {
-        return callback(null, true);
-      }
-
-      return callback(null, true);
-    },
-    credentials: true,
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
