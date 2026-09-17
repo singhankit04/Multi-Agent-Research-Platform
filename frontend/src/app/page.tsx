@@ -28,7 +28,8 @@ const SAMPLE_QUERIES = [
   "Autonomous agent architectures and memory systems",
 ];
 
-const BACKEND_URL = process.env.BACKEND_URL
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL 
 
 export default function Home() {
   const [topic, setTopic] = useState("");
