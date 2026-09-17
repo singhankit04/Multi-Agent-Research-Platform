@@ -28,9 +28,7 @@ const SAMPLE_QUERIES = [
   "Autonomous agent architectures and memory systems",
 ];
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  "https://multi-agent-research-platform-3tvo.onrender.com";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
@@ -71,22 +69,29 @@ export default function Home() {
   }, []);
 
   // Check backend health
-  const checkHealth = async (urlToCheck = apiUrl) => {
+  const checkHealth = async (urlToCheck = apiUrl || BACKEND_URL) => {
+    const target = urlToCheck || BACKEND_URL;
+    if (!target) {
+      setBackendStatus("offline");
+      return;
+    }
+
     setBackendStatus("checking");
     try {
-      const res = await fetch(`${urlToCheck}/health`, { method: "GET" });
+      const res = await fetch(`${target.replace(/\/$/, "")}/health`, { method: "GET" });
       if (res.ok) {
         setBackendStatus("online");
       } else {
         setBackendStatus("offline");
       }
-    } catch {
+    } catch (e) {
+      console.error("Health check failed:", e);
       setBackendStatus("offline");
     }
   };
 
   useEffect(() => {
-    checkHealth(apiUrl);
+    checkHealth(apiUrl || BACKEND_URL);
   }, [apiUrl]);
 
   // Handle live elapsed timer during active research
@@ -118,6 +123,8 @@ export default function Home() {
     const q = (queryToRun !== undefined ? queryToRun : topic).trim();
     if (!q || isLoading) return;
 
+    const targetUrl = apiUrl || BACKEND_URL;
+
     setActiveQuery(q);
     setHasStarted(true);
     setIsLoading(true);
@@ -126,7 +133,7 @@ export default function Home() {
     setActiveTab("report");
 
     try {
-      const res = await fetch(`${apiUrl}/api/research`, {
+      const res = await fetch(`${targetUrl.replace(/\/$/, "")}/api/research`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic: q }),
