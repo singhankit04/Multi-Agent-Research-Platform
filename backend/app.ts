@@ -1,11 +1,28 @@
+import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import cors from "cors";
 import { runResearchPipeline } from "./llmWork/pipeline.js";
 
 const app = express();
 
-// Standard middleware
-app.use(cors());
+// Configure allowed CORS origins
+const allowedOrigins = [
+  process.env.FRONTEND_URI,
+].filter(Boolean) as string[];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, health checks) or matching allowed origins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin '${origin}' not allowed by CORS`));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Health check endpoints

@@ -28,12 +28,15 @@ const SAMPLE_QUERIES = [
   "Autonomous agent architectures and memory systems",
 ];
 
-const DEFAULT_API_URL = "http://localhost:5000";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:5000";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
-  const [apiUrl] = useState(DEFAULT_API_URL);
+  const [apiUrl] = useState(BACKEND_URL);
   const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const [isLoading, setIsLoading] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
