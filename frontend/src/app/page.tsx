@@ -28,10 +28,7 @@ const SAMPLE_QUERIES = [
   "Autonomous agent architectures and memory systems",
 ];
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:5000";
+const BACKEND_URL = process.env.BACKEND_URL
 
 export default function Home() {
   const [topic, setTopic] = useState("");
