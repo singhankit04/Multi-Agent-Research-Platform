@@ -1,15 +1,37 @@
 import "dotenv/config";
 import { ChatGroq } from "@langchain/groq";
+import { ChatMistralAI } from "@langchain/mistralai";
 import { createAgent } from "langchain";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { webSearchTool, webScrapeTool } from "./tools.js";
 
-// Initialize Groq LLM model
-const model = new ChatGroq({
-  model:"openai/gpt-oss-120b",
+// 1. Research Model: Groq Compound
+const researchModel = new ChatGroq({
+  model: "openai/gpt-oss-20b",
   apiKey: process.env.GROQ_API_KEY,
-  temperature: 0.2,
+  temperature: 0,
+});
+
+// 2. Scrape Model: Groq Compound Mini
+const scrapeModel = new ChatGroq({
+  model: "qwen/qwen3.8-27b",
+  apiKey: process.env.GROQ_API_KEY,
+  temperature: 0,
+});
+
+// 3. Writer Model: GPT-OSS 120B on Groq
+const writerModel = new ChatGroq({
+  model: "openai/gpt-oss-120b",
+  apiKey: process.env.GROQ_API_KEY,
+  temperature: 0,
+});
+
+// 4. Critic Model: Qwen 3.8 27B on Groq
+const criticModel = new ChatGroq({
+  model: "openai/gpt-oss-120b",
+  apiKey: process.env.GROQ_API_KEY,
+  temperature: 0,
 });
 
 /**
@@ -34,16 +56,19 @@ function extractUrls(text: string): string[] {
  * and extracts relevant source URLs to pass to downstream scrapers.
  */
 export const researchAgent = createAgent({
-  model,
+  model: researchModel,
   tools: [webSearchTool],
   systemPrompt: `You are a real-time web research agent.
 Your responsibilities:
-1. Always use the 'web_search' tool to find the most current and relevant information.
+1. Always use the 'web_search' tool to find the most current and relevant information. If the dedicated year is not mentioned, then search for the current year information only.
 2. Synthesize key trends, facts, and developments clearly.
-3. Always include the source URLs and citations in your response.`,
+3. Always include the source URLs and citations in your response.
+4. Keep the summary in 400-500 words`,
 });
 
-export async function runResearchAgent(query: string): Promise<{ summary: string; links: string[] }> {
+export async function runResearchAgent(
+  query: string,
+): Promise<{ summary: string; links: string[] }> {
   const result = await researchAgent.invoke({
     messages: [{ role: "user", content: query }],
   });
@@ -58,7 +83,10 @@ export async function runResearchAgent(query: string): Promise<{ summary: string
   // Collect all URLs from message history and tool outputs
   const links: string[] = [];
   for (const msg of result.messages) {
-    const contentStr = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
+    const contentStr =
+      typeof msg.content === "string"
+        ? msg.content
+        : JSON.stringify(msg.content);
     const foundUrls = extractUrls(contentStr);
     for (const u of foundUrls) {
       if (!links.includes(u)) {
@@ -78,22 +106,26 @@ export async function runResearchAgent(query: string): Promise<{ summary: string
  * and key arguments from each page.
  */
 export const scrapeAgent = createAgent({
-  model,
+  model: scrapeModel,
   tools: [webScrapeTool],
   systemPrompt: `You are a web scraping and content extraction agent.
 Your responsibilities:
 1. Use the 'web_scrape' tool to fetch and extract readable text from provided URLs.
 2. Extract detailed insights, technical information, key arguments, and statistics.
-3. Organize findings clearly by source URL.`,
+3. Organize findings clearly by source URL.
+4. Keep the summary around 200 words`,
 });
 
-export async function runScrapeAgent(urls: string | string[]): Promise<string> {
+export async function runScrapeAgent(
+  researchSummary: string,
+  urls: string | string[],
+): Promise<string> {
   const urlList = Array.isArray(urls) ? urls : [urls];
   if (urlList.length === 0) {
     return "No URLs provided for scraping.";
   }
 
-  const prompt = `Please scrape and analyze the following URLs:\n\n${urlList
+  const prompt = `based on the following research summary pick thme most relavent urls and extract the full content from the them, then make a summary of the content:\n\nResearch Summary:${researchSummary}\n\n URLs:\n\n${urlList
     .map((url, i) => `${i + 1}. ${url}`)
     .join("\n")}`;
 
@@ -126,24 +158,34 @@ Structure of the report:
 3. Emerging Trends & Implications: What this means moving forward.
 4. Sources & References: Mention cited URLs and references.
 
-Maintain an objective, analytical tone and format clearly with markdown headings.`,
+Maintain an objective, analytical tone and format clearly with markdown headings. You have to use all the information provided by the research agent and the scrape agent to generate the final comprehensive research report.`,
   ],
   [
     "user",
     `Topic: {topic}
 
-Scraped Content & Analysis:
+Web Research Content:
+{researchContent}
+
+Scraped Content:
 {scrapedContent}
 
-Please generate the final comprehensive research report.`,
+Please generate the final comprehensive research report around 200 words.`,
   ],
 ]);
 
-export const writerChain = writerPrompt.pipe(model).pipe(new StringOutputParser());
+export const writerChain = writerPrompt
+  .pipe(writerModel)
+  .pipe(new StringOutputParser());
 
-export async function runWriterChain(scrapedContent: string, topic: string = "Research Report"): Promise<string> {
+export async function runWriterChain(
+  scrapedContent: string,
+  researchContent: string,
+  topic: string = "Research Report",
+): Promise<string> {
   return writerChain.invoke({
     topic,
+    researchContent,
     scrapedContent,
   });
 }
@@ -169,7 +211,8 @@ Format your critique as follows:
 1. Overall Rating: Score out of 100 (e.g., Score: 85/100)
 2. Strengths: What was done well.
 3. Identified Faults & Weaknesses: Specific flaws, logical gaps, or unsupported claims.
-4. Suggestions for Improvement: Clear, actionable recommendations to improve the report.`,
+4. Suggestions for Improvement: Clear, actionable recommendations to improve the report.
+5. One line verdict about the report`,
   ],
   [
     "user",
@@ -179,7 +222,9 @@ Format your critique as follows:
   ],
 ]);
 
-export const criticChain = criticPrompt.pipe(model).pipe(new StringOutputParser());
+export const criticChain = criticPrompt
+  .pipe(criticModel)
+  .pipe(new StringOutputParser());
 
 export async function runCriticChain(report: string): Promise<string> {
   return criticChain.invoke({

@@ -32,7 +32,7 @@ export const webSearchTool = tool(
       return response.results
         .map(
           (result, index) =>
-            `[Source ${index + 1}]: ${result.title}\nURL: ${result.url}\nContent: ${result.content}`,
+            `[Source ${index + 1}]: ${result.title}\nURL: ${result.url}\nContent: ${result.content?.slice(0,300)}`,
         )
         .join("\n\n");
     } catch (error: any) {
@@ -55,9 +55,7 @@ export const webSearchTool = tool(
  * 3. Extracts clean text paragraphs and headings from the main content.
  * 4. Falls back to reader proxy if the site uses JavaScript rendering or anti-bot protection.
  */
-export async function scrapePage(
-  url: string,
-): Promise<{ title: string; content: string }> {
+export async function scrapePage(url: string): Promise<string> {
   const browserHeaders = {
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -114,14 +112,7 @@ export async function scrapePage(
       ].join(", "),
     ).remove();
 
-    // Step 3: Extract page title
-    const title =
-      $("meta[property='og:title']").attr("content") ||
-      $("title").text().trim() ||
-      $("h1").first().text().trim() ||
-      "Untitled Page";
-
-    // Step 4: Extract core text from main article elements (paragraphs and headings)
+    // Step 3: Extract core text from main article elements (paragraphs and headings)
     const contentBlocks: string[] = [];
     const mainContainer = $("article, main, [role='main'], #content, .content, body").first();
 
@@ -141,13 +132,13 @@ export async function scrapePage(
     }
 
     if (content.length > 100) {
-      return { title, content: content.slice(0, 2500) };
+      return content.slice(0, 1500);
     }
   } catch (_err) {
     // Direct scrape failed or site blocked scrapers; fall back to reader proxy
   }
 
-  // Step 5: Universal fallback for heavy JavaScript SPAs or protected sites
+  // Step 4: Universal fallback for heavy JavaScript SPAs or protected sites
   try {
     const fallbackResponse = await axios.get(`https://r.jina.ai/${url}`, {
       timeout: 12000,
@@ -155,15 +146,9 @@ export async function scrapePage(
     const markdown = String(fallbackResponse.data || "");
     const cleanedContent = markdown.replace(/\s+/g, " ").trim();
 
-    return {
-      title: "Scraped Page",
-      content: cleanedContent.slice(0, 3000),
-    };
+    return cleanedContent.slice(0, 2000);
   } catch (fallbackError: any) {
-    return {
-      title: "Unavailable",
-      content: `Failed to retrieve content: ${fallbackError.message}`,
-    };
+    return `Failed to retrieve content: ${fallbackError.message}`;
   }
 }
 
@@ -174,22 +159,22 @@ export async function scrapePage(
 export const webScrapeTool = tool(
   async ({ url }) => {
     try {
-      const { title, content } = await scrapePage(url);
+      const content = await scrapePage(url);
       if (!content) {
         return `Could not extract text content from ${url}`;
       }
 
-      return `Title: ${title}\nURL: ${url}\n\nContent:\n${content}`;
+      return `URL: ${url}\n\nContent:\n${content}`;
     } catch (error: any) {
       return `Scraping failed for ${url}: ${error?.message || String(error)}`;
     }
   },
   {
-    name: "web_scrape",
+    name: "scrape_page",
     description:
       "Fetches a webpage URL and extracts clean readable text without headers, footers, or ads.",
     schema: z.object({
-      url: z.string().url().describe("The webpage URL to scrape"),
+      url: z.string().url().describe("The webpage URL to scrape and get content"),
     }),
   },
 );

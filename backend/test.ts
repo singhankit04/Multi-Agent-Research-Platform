@@ -1,4 +1,4 @@
-// import { webSearchTool, scrapePage } from "./tools.ts";
+import { runResearchPipeline } from "./llmWork/pipeline.js";
 
 // const testUrls = [
 //   // 1. Wikipedia (standard HTML with headings and references)
@@ -20,9 +20,8 @@
 // async function testScrapeTool() {
 //   for (const url of testUrls) {
 //     console.log(`\n--- Scraping: ${url} ---`);
-//     const result = await scrapePage(url);
-//     console.log(`Title: ${result.title}`);
-//     console.log(`Content Preview: ${result.content}`);
+//     const content = await scrapePage(url);
+//     console.log(`Content Preview: ${content}`);
 //   }
 // }
 // testScrapeTool()
@@ -34,3 +33,8 @@
 //   console.log(result);
 // }
 // testTavilySearch()
+
+const result = await runResearchPipeline(
+  "latest developments in artificial intelligence",
+);
+console.log(JSON.stringify(result, null, 2));
