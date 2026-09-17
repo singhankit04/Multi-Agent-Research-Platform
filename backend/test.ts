@@ -1,3 +1,4 @@
+import { runResearchAgent } from "./llmWork/agents.js";
 import { runResearchPipeline } from "./llmWork/pipeline.js";
 
 // const testUrls = [
@@ -34,7 +35,10 @@ import { runResearchPipeline } from "./llmWork/pipeline.js";
 // }
 // testTavilySearch()
 
-const result = await runResearchPipeline(
-  "Autonomous agent architectures and memory systems",
-);
-console.log(JSON.stringify(result, null, 2));
+// const result = await runResearchPipeline(
+//   "latest ai developments",
+// );
+// console.log(JSON.stringify(result, null, 2));
+
+const result = await runResearchAgent("latest ai development");
+console.log(result);

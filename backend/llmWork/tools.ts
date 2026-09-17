@@ -32,7 +32,7 @@ export const webSearchTool = tool(
       return response.results
         .map(
           (result, index) =>
-            `[Source ${index + 1}]: ${result.title}\nURL: ${result.url}\nContent: ${result.content?.slice(0,300)}`,
+            `[Source ${index + 1}]: ${result.title}\nURL: ${result.url}\nContent: ${result.content?.slice(0, 300)}`,
         )
         .join("\n\n");
     } catch (error: any) {
@@ -41,7 +41,7 @@ export const webSearchTool = tool(
   },
   {
     name: "web_search",
-    description: "Search the live web for current and relevant information.",
+    description: "Search web for recent and relevant information.",
     schema: z.object({
       query: z.string().describe("Search query to look up on the web"),
     }),
@@ -114,7 +114,9 @@ export async function scrapePage(url: string): Promise<string> {
 
     // Step 3: Extract core text from main article elements (paragraphs and headings)
     const contentBlocks: string[] = [];
-    const mainContainer = $("article, main, [role='main'], #content, .content, body").first();
+    const mainContainer = $(
+      "article, main, [role='main'], #content, .content, body",
+    ).first();
 
     mainContainer.find("h1, h2, h3, h4, p, li, blockquote").each((_, el) => {
       const text = $(el).text().replace(/\s+/g, " ").trim();
@@ -159,22 +161,23 @@ export async function scrapePage(url: string): Promise<string> {
 export const webScrapeTool = tool(
   async ({ url }) => {
     try {
-      const content = await scrapePage(url);
+      const cleanUrl = url.replace(/[<>"'\[\]()]/g, "").trim();
+      const content = await scrapePage(cleanUrl);
       if (!content) {
-        return `Could not extract text content from ${url}`;
+        return `Could not extract text content from ${cleanUrl}`;
       }
 
-      return `URL: ${url}\n\nContent:\n${content}`;
+      return `URL: ${cleanUrl}\n\nContent:\n${content.slice(0, 1500)}`;
     } catch (error: any) {
       return `Scraping failed for ${url}: ${error?.message || String(error)}`;
     }
   },
   {
-    name: "scrape_page",
+    name: "web_scrape",
     description:
       "Fetches a webpage URL and extracts clean readable text without headers, footers, or ads.",
     schema: z.object({
-      url: z.string().url().describe("The webpage URL to scrape and get content"),
+      url: z.string().describe("The webpage URL to scrape and get content"),
     }),
   },
 );
