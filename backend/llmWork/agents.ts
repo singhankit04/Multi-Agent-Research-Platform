@@ -14,9 +14,9 @@ const researchModel = new ChatGroq({
 });
 
 // 2. Scrape Model: Groq Compound Mini
-const scrapeModel = new ChatGroq({
-  model: "qwen/qwen3.8-27b",
-  apiKey: process.env.GROQ_API_KEY,
+const scrapeModel = new ChatMistralAI({
+  model: "labs-leanstral-1-5-1",
+  apiKey: process.env.MISTRAL_API_KEY,
   temperature: 0,
 });
 
@@ -63,7 +63,7 @@ Your responsibilities:
 1. Always use the 'web_search' tool to find the most current and relevant information. If the dedicated year is not mentioned, then search for the current year information only.
 2. Synthesize key trends, facts, and developments clearly.
 3. Always include the source URLs and citations in your response.
-4. Keep the summary in 400-500 words`,
+4. Keep the summary consize 200-300 words `,
 });
 
 export async function runResearchAgent(
@@ -112,8 +112,7 @@ export const scrapeAgent = createAgent({
 Your responsibilities:
 1. Use the 'web_scrape' tool to fetch and extract readable text from provided URLs.
 2. Extract detailed insights, technical information, key arguments, and statistics.
-3. Organize findings clearly by source URL.
-4. Keep the summary around 200 words`,
+3. Keep the summary around 200-300 words`,
 });
 
 export async function runScrapeAgent(
@@ -152,12 +151,6 @@ const writerPrompt = ChatPromptTemplate.fromMessages([
     `You are a professional research report writer.
 Your goal is to write a comprehensive, clear, and well-structured report based on the provided scraped content and research data.
 
-Structure of the report:
-1. Executive Summary: High-level overview of the findings.
-2. Key Findings & Detailed Analysis: Detailed breakdown with core points and evidence.
-3. Emerging Trends & Implications: What this means moving forward.
-4. Sources & References: Mention cited URLs and references.
-
 Maintain an objective, analytical tone and format clearly with markdown headings. You have to use all the information provided by the research agent and the scrape agent to generate the final comprehensive research report.`,
   ],
   [
@@ -170,7 +163,7 @@ Web Research Content:
 Scraped Content:
 {scrapedContent}
 
-Please generate the final comprehensive research report around 200 words.`,
+Please generate the final comprehensive research report around 400 words.`,
   ],
 ]);
 

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "tsc",
-    "start": "tsx server.ts"
+    "start": "tsx server.ts",
+    "test": "tsx test.ts"
   },
   "dependencies": {
     "@langchain/community": "^1.1.29",

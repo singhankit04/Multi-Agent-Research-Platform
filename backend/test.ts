@@ -35,6 +35,6 @@ import { runResearchPipeline } from "./llmWork/pipeline.js";
 // testTavilySearch()
 
 const result = await runResearchPipeline(
-  "latest developments in artificial intelligence",
+  "Autonomous agent architectures and memory systems",
 );
 console.log(JSON.stringify(result, null, 2));
