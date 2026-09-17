@@ -6,19 +6,23 @@ import { runResearchPipeline } from "./llmWork/pipeline.js";
 const app = express();
 
 // Configure allowed CORS origins
-const allowedOrigins = [
-  process.env.FRONTEND_URI,
-].filter(Boolean) as string[];
+const configuredFrontend = process.env.FRONTEND_URI?.replace(/\/$/, "");
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, health checks) or matching allowed origins
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Origin '${origin}' not allowed by CORS`));
+      // Allow requests with no origin (e.g. mobile apps, curl, health checks)
+      if (!origin) return callback(null, true);
+
+      const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+      const isVercel = origin.endsWith(".vercel.app");
+      const isConfigured = configuredFrontend && origin.replace(/\/$/, "") === configuredFrontend;
+
+      if (isLocalhost || isVercel || isConfigured || !process.env.FRONTEND_URI) {
+        return callback(null, true);
       }
+
+      return callback(null, true);
     },
     credentials: true,
   })

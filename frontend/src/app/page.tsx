@@ -29,7 +29,8 @@ const SAMPLE_QUERIES = [
 ];
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL 
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  "https://multi-agent-research-platform-3tvo.onrender.com";
 
 export default function Home() {
   const [topic, setTopic] = useState("");
